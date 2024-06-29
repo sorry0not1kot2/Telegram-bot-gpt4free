@@ -1,4 +1,5 @@
 import logging
+import os  # Добавьте этот импорт для секретных переменных репозитория
 from aiogram import Bot, Dispatcher, types
 import g4f
 from aiogram.utils import executor
