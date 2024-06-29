@@ -52,12 +52,16 @@ async def send_welcome(message: types.Message):
             provider=g4f.Provider.GeekGpt,
         )
         chat_gpt_response = response
-    except g4f.errors.RateLimitError as e:
-        logging.error(f"Превышен лимит запросов: {e}")
-        chat_gpt_response = "Извините, вы превысили лимит запросов. Попробуйте позже."
-    except g4f.errors.ServerError as e:
-        logging.error(f"Ошибка сервера: {e}")
-        chat_gpt_response = "Извините, произошла ошибка на сервере. Попробуйте позже."
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 429:
+            logging.error(f"Превышен лимит запросов: {e}")
+            chat_gpt_response = "Извините, вы превысили лимит запросов. Попробуйте позже."
+        elif e.response.status_code == 525:
+            logging.error(f"Ошибка сервера: {e}")
+            chat_gpt_response = "Извините, произошла ошибка на сервере. Попробуйте позже."
+        else:
+            logging.error(f"HTTP ошибка: {e}")
+            chat_gpt_response = "Извините, произошла ошибка."
     except Exception as e:
         logging.error(f"Общая ошибка: {e}")
         chat_gpt_response = "Извините, произошла ошибка."
