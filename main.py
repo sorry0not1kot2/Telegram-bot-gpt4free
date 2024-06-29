@@ -1,5 +1,6 @@
 import logging
 import os
+import requests
 from aiogram import Bot, Dispatcher, types
 import g4f
 from aiogram.utils import executor
