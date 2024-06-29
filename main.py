@@ -7,7 +7,7 @@ from aiogram.utils import executor
 logging.basicConfig(level=logging.INFO)
 
 # Инициализация бота
-API_TOKEN = 'ВАШ ТОКЕН ТЕЛЕГРАМ'
+API_TOKEN = '7249215862:AAE2VGVicAmDtmFTw4kGvW50vEL-EZjo2UE'
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 
