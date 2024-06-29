@@ -24,13 +24,22 @@ def trim_history(history, max_length=4096):
         current_length -= len(removed_message["content"])
     return history
 
+async def get_gpt_response(query):
+    try:
+        response = await g4f.ChatCompletion.create_async(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": query}],
+        )
+        return response
+    except Exception as e:
+        logging.error(f"Ошибка при получении ответа от GPT: {e}")
+        return "Извините, произошла ошибка."
 
 @dp.message_handler(commands=['clear'])
 async def process_clear_command(message: types.Message):
     user_id = message.from_user.id
     conversation_history[user_id] = []
     await message.reply("История диалога очищена.")
-
 
 # Обработчик для каждого нового сообщения
 @dp.message_handler()
@@ -47,12 +56,7 @@ async def send_welcome(message: types.Message):
     chat_history = conversation_history[user_id]
 
     try:
-        response = await g4f.ChatCompletion.create_async(
-            model=g4f.models.default,
-            messages=chat_history,
-            provider=g4f.Provider.GeekGpt,
-        )
-        chat_gpt_response = response
+        chat_gpt_response = await get_gpt_response(user_input)
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 429:
             logging.error(f"Превышен лимит запросов: {e}")
@@ -72,7 +76,6 @@ async def send_welcome(message: types.Message):
     length = sum(len(message["content"]) for message in conversation_history[user_id])
     logging.info(f"Длина истории: {length}")
     await message.answer(chat_gpt_response)
-
 
 # Запуск бота
 if __name__ == '__main__':
