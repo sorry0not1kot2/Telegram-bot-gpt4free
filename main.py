@@ -27,7 +27,7 @@ def trim_history(history, max_length=4096):
 async def get_gpt_response(query):
     try:
         response = await g4f.ChatCompletion.create_async(
-            model="gpt-3.5-turbo",  # Используйте правильное имя модели
+            model="gpt-4",  # Используйте правильное имя модели
             messages=[{"role": "user", "content": query}],
         )
         return response
