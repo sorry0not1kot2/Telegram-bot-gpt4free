@@ -52,11 +52,8 @@ async def send_welcome(message: types.Message):
             provider=g4f.Provider.GeekGpt,
         )
         chat_gpt_response = response
-    except g4f.Provider.GeekGpt as e:
-        logging.error(f"Ошибка провайдера GeekGpt: {e}")
-        chat_gpt_response = "Извините, произошла ошибка с провайдером GeekGpt."
     except Exception as e:
-        logging.error(f"Общая ошибка: {e}")
+        logging.error(f"Ошибка: {e}")
         chat_gpt_response = "Извините, произошла ошибка."
 
     conversation_history[user_id].append({"role": "assistant", "content": chat_gpt_response})
