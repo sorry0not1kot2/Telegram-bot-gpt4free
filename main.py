@@ -52,8 +52,14 @@ async def send_welcome(message: types.Message):
             provider=g4f.Provider.GeekGpt,
         )
         chat_gpt_response = response
+    except g4f.errors.RateLimitError as e:
+        logging.error(f"Превышен лимит запросов: {e}")
+        chat_gpt_response = "Извините, вы превысили лимит запросов. Попробуйте позже."
+    except g4f.errors.ServerError as e:
+        logging.error(f"Ошибка сервера: {e}")
+        chat_gpt_response = "Извините, произошла ошибка на сервере. Попробуйте позже."
     except Exception as e:
-        logging.error(f"Ошибка: {e}")
+        logging.error(f"Общая ошибка: {e}")
         chat_gpt_response = "Извините, произошла ошибка."
 
     conversation_history[user_id].append({"role": "assistant", "content": chat_gpt_response})
