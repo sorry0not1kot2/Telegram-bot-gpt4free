@@ -15,6 +15,8 @@ dp = Dispatcher(bot)
 conversation_history = {}
 
 # Функция для обрезки истории разговора
+
+
 def trim_history(history, max_length=4096):
     current_length = sum(len(message["content"]) for message in history)
     while history and current_length > max_length:
@@ -30,6 +32,8 @@ async def process_clear_command(message: types.Message):
     await message.reply("История диалога очищена.")
 
 # Обработчик для каждого нового сообщения
+
+
 @dp.message_handler()
 async def send_welcome(message: types.Message):
     user_id = message.from_user.id
@@ -47,11 +51,11 @@ async def send_welcome(message: types.Message):
         response = await g4f.ChatCompletion.create_async(
             model=g4f.models.default,
             messages=chat_history,
-            provider=g4f.Provider.Bing,
+            provider=g4f.Provider.GeekGpt,
         )
         chat_gpt_response = response
     except Exception as e:
-        print(f"{g4f.Provider.Bing.__name__}:", e)
+        print(f"{g4f.Provider.GeekGpt.__name__}:", e)
         chat_gpt_response = "Извините, произошла ошибка."
 
     conversation_history[user_id].append({"role": "assistant", "content": chat_gpt_response})
