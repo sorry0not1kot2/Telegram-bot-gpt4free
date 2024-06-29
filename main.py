@@ -71,6 +71,10 @@ async def send_welcome(message: types.Message):
         logging.error(f"Общая ошибка: {e}")
         chat_gpt_response = "Извините, произошла ошибка."
 
+    # Проверка на пустое сообщение
+    if not chat_gpt_response.strip():
+        chat_gpt_response = "Извините, произошла ошибка. Ответ пустой."
+
     conversation_history[user_id].append({"role": "assistant", "content": chat_gpt_response})
     logging.info(f"История диалога: {conversation_history}")
     length = sum(len(message["content"]) for message in conversation_history[user_id])
