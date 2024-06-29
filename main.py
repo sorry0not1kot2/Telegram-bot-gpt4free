@@ -51,7 +51,7 @@ async def send_welcome(message: types.Message):
     if user_id not in conversation_history:
         conversation_history[user_id] = []
 
-    # Добавляем только сообщения от пользователя в историю
+    # Добавляем сообщения от пользователя в историю
     conversation_history[user_id].append({"role": "user", "content": user_input})
     conversation_history[user_id] = trim_history(conversation_history[user_id])
 
@@ -77,8 +77,10 @@ async def send_welcome(message: types.Message):
     if not chat_gpt_response.strip() or re.search(r'<[^>]+>', chat_gpt_response):
         chat_gpt_response = "Извините, произошла ошибка. Ответ пустой или содержит некорректные данные."
 
-    # Добавляем только сообщения от GPT-4 в историю
+    # Добавляем сообщения от GPT-4 в историю
     conversation_history[user_id].append({"role": "assistant", "content": chat_gpt_response})
+    conversation_history[user_id] = trim_history(conversation_history[user_id])
+    
     logging.info(f"История диалога: {conversation_history}")
     length = sum(len(message["content"]) for message in conversation_history[user_id])
     logging.info(f"Длина истории: {length}")
