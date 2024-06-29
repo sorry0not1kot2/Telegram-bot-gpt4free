@@ -61,4 +61,30 @@ async def send_welcome(message: types.Message):
         chat_gpt_response = await get_gpt_response(user_input)
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 429:
-            logging.error(f"
+            logging.error(f"Превышен лимит запросов: {e}")
+            chat_gpt_response = "Извините, вы превысили лимит запросов. Попробуйте позже."
+        elif e.response.status_code == 525:
+            logging.error(f"Ошибка сервера: {e}")
+            chat_gpt_response = "Извините, произошла ошибка на сервере. Попробуйте позже."
+        else:
+            logging.error(f"HTTP ошибка: {e}")
+            chat_gpt_response = "Извините, произошла ошибка."
+    except Exception as e:
+        logging.error(f"Общая ошибка: {e}")
+        chat_gpt_response = "Извините, произошла ошибка."
+
+    # Проверка на пустое сообщение или HTML-код
+    if not chat_gpt_response.strip() or re.search(r'<[^>]+>', chat_gpt_response):
+        chat_gpt_response = "Извините, произошла ошибка. Ответ пустой или содержит некорректные данные."
+
+    # Добавляем только сообщения от GPT-4 в историю
+    conversation_history[user_id].append({"role": "assistant", "content": chat_gpt_response})
+    logging.info(f"История диалога: {conversation_history}")
+    length = sum(len(message["content"]) for message in conversation_history[user_id])
+    logging.info(f"Длина истории: {length}")
+    await message.answer(chat_gpt_response)
+
+# Запуск бота
+if __name__ == '__main__':
+    logging.info("Запуск бота...")
+    executor.start_polling(dp, skip_updates=True)
