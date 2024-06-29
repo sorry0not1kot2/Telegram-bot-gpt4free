@@ -1,5 +1,5 @@
 import logging
-import os  # Добавьте этот импорт для секретных переменных репозитория
+import os
 from aiogram import Bot, Dispatcher, types
 import g4f
 from aiogram.utils import executor
@@ -16,8 +16,6 @@ dp = Dispatcher(bot)
 conversation_history = {}
 
 # Функция для обрезки истории разговора
-
-
 def trim_history(history, max_length=4096):
     current_length = sum(len(message["content"]) for message in history)
     while history and current_length > max_length:
@@ -32,9 +30,8 @@ async def process_clear_command(message: types.Message):
     conversation_history[user_id] = []
     await message.reply("История диалога очищена.")
 
+
 # Обработчик для каждого нового сообщения
-
-
 @dp.message_handler()
 async def send_welcome(message: types.Message):
     user_id = message.from_user.id
@@ -55,17 +52,21 @@ async def send_welcome(message: types.Message):
             provider=g4f.Provider.GeekGpt,
         )
         chat_gpt_response = response
+    except g4f.Provider.GeekGpt as e:
+        logging.error(f"Ошибка провайдера GeekGpt: {e}")
+        chat_gpt_response = "Извините, произошла ошибка с провайдером GeekGpt."
     except Exception as e:
-        print(f"{g4f.Provider.GeekGpt.__name__}:", e)
+        logging.error(f"Общая ошибка: {e}")
         chat_gpt_response = "Извините, произошла ошибка."
 
     conversation_history[user_id].append({"role": "assistant", "content": chat_gpt_response})
-    print(conversation_history)
+    logging.info(f"История диалога: {conversation_history}")
     length = sum(len(message["content"]) for message in conversation_history[user_id])
-    print(length)
+    logging.info(f"Длина истории: {length}")
     await message.answer(chat_gpt_response)
 
 
 # Запуск бота
 if __name__ == '__main__':
+    logging.info("Запуск бота...")
     executor.start_polling(dp, skip_updates=True)
