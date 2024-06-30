@@ -40,6 +40,10 @@ async def handle_message(message: types.Message):
         
         response = await get_gpt_response(query)
         
+        # Проверка на наличие HTML-кода
+        if re.search(r'<[^>]+>', response):
+            response = "Извините, произошла ошибка. Ответ содержит некорректные данные."
+
         # Разделение длинного сообщения на части
         messages = split_message(response)
         for msg in messages:
