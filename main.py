@@ -4,7 +4,6 @@ import requests
 from aiogram import Bot, Dispatcher, types
 import g4f
 from aiogram.utils import executor
-import re
 
 # Включите логирование
 logging.basicConfig(level=logging.INFO)
