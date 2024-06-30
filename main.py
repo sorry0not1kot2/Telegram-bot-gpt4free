@@ -6,6 +6,8 @@ import g4f
 from aiogram.utils import executor
 import re
 import asyncio
+from aiogram.utils.markdown import html_decoration as hd
+from bs4 import BeautifulSoup
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -43,6 +45,26 @@ async def get_gpt_response(chat_history):
 def split_message(message, max_length=4096):
     return [message[i:i+max_length] for i in range(0, len(message), max_length)]
 
+def html_to_telegram_format(html_content):
+    soup = BeautifulSoup(html_content, 'html.parser')
+    telegram_text = ''
+    for element in soup.recursiveChildGenerator():
+        if element.name == 'b':
+            telegram_text += hd.bold(element.text)
+        elif element.name == 'i':
+            telegram_text += hd.italic(element.text)
+        elif element.name == 'u':
+            telegram_text += hd.underline(element.text)
+        elif element.name == 'a':
+            telegram_text += hd.link(element.text, element['href'])
+        elif element.name == 'code':
+            telegram_text += hd.code(element.text)
+        elif element.name == 'pre':
+            telegram_text += hd.pre(element.text)
+        elif element.name is None:
+            telegram_text += element
+    return telegram_text
+
 @dp.message_handler()
 async def handle_message(message: types.Message):
     user_id = message.from_user.id
@@ -60,23 +82,23 @@ async def handle_message(message: types.Message):
     if user_input:
         logger.info(f"Получен запрос: {user_input}")
         await message.answer("Обрабатываю ваш запрос...")
-        
-        response = await get_gpt_response(chat_history)
-        
-        # Проверка на наличие HTML-кода
-        if re.search(r'<[^>]+>', response):
-            logger.error(f"Получен HTML-код вместо текста: {response}")
-            response = "Извините, произошла ошибка. HTML-код вместо текста."
 
-        # Разделение длинного сообщения на части
+        response = await get_gpt_response(chat_history)
+
+        # Преобразование HTML в формат Telegram
+        if re.search(r'<[^>]+>', response):
+            logger.info("Преобразование HTML в формат Telegram")
+            response = html_to_telegram_format(response)
+
+        # Разделение длинных сообщений
         messages = split_message(response)
         for msg in messages:
             await message.reply(msg)
-        
+
         # Добавляем сообщения от GPT в историю
         conversation_history[user_id].append({"role": "assistant", "content": response})
         conversation_history[user_id] = trim_history(conversation_history[user_id])
-        
+
         logger.info("Ответ отправлен")
     else:
         await message.reply("Пожалуйста, введите сообщение.")
