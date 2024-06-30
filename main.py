@@ -3,7 +3,6 @@ import os
 import requests
 from aiogram import Bot, Dispatcher, types
 import g4f
-from g4f import Provider
 from aiogram.utils import executor
 import re
 import asyncio
@@ -17,12 +16,23 @@ API_TOKEN = os.getenv('API_TOKEN')
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 
-async def get_gpt_response(query):
+# Словарь для хранения истории разговоров
+conversation_history = {}
+
+# Функция для обрезки истории разговора
+def trim_history(history, max_length=4096):
+    current_length = sum(len(message["content"]) for message in history)
+    while history and current_length > max_length:
+        removed_message = history.pop(0)
+        current_length -= len(removed_message["content"])
+    return history
+
+async def get_gpt_response(chat_history):
     try:
         response = await g4f.ChatCompletion.create_async(
             model="gpt-4",  # Используйте правильное имя модели
-            messages=[{"role": "user", "content": query}],
-            provider=Provider.OPENAI  # Укажите провайдера
+            messages=chat_history,
+            provider=g4f.Provider.GeekGpt  # Используйте указанного провайдера
         )
         logger.info(f"Ответ от GPT-4: {response}")
         return response
@@ -35,13 +45,23 @@ def split_message(message, max_length=4096):
 
 @dp.message_handler()
 async def handle_message(message: types.Message):
-    query = message.text
-    
-    if query:
-        logger.info(f"Получен запрос: {query}")
+    user_id = message.from_user.id
+    user_input = message.text
+
+    if user_id not in conversation_history:
+        conversation_history[user_id] = []
+
+    # Добавляем сообщения от пользователя в историю
+    conversation_history[user_id].append({"role": "user", "content": user_input})
+    conversation_history[user_id] = trim_history(conversation_history[user_id])
+
+    chat_history = conversation_history[user_id]
+
+    if user_input:
+        logger.info(f"Получен запрос: {user_input}")
         await message.answer("Обрабатываю ваш запрос...")
         
-        response = await get_gpt_response(query)
+        response = await get_gpt_response(chat_history)
         
         # Проверка на наличие HTML-кода
         if re.search(r'<[^>]+>', response):
@@ -52,6 +72,10 @@ async def handle_message(message: types.Message):
         messages = split_message(response)
         for msg in messages:
             await message.reply(msg)
+        
+        # Добавляем сообщения от GPT-4 в историю
+        conversation_history[user_id].append({"role": "assistant", "content": response})
+        conversation_history[user_id] = trim_history(conversation_history[user_id])
         
         logger.info("Ответ отправлен")
     else:
