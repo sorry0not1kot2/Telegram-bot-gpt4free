@@ -3,6 +3,7 @@ import os
 import requests
 from aiogram import Bot, Dispatcher, types
 import g4f
+from g4f import Provider
 from aiogram.utils import executor
 import re
 import asyncio
@@ -21,7 +22,9 @@ async def get_gpt_response(query):
         response = await g4f.ChatCompletion.create_async(
             model="gpt-4",  # Используйте правильное имя модели
             messages=[{"role": "user", "content": query}],
+            provider=Provider.OPENAI  # Укажите провайдера
         )
+        logger.info(f"Ответ от GPT-4: {response}")
         return response
     except Exception as e:
         logger.error(f"Ошибка при получении ответа от GPT: {str(e)}")
@@ -42,6 +45,7 @@ async def handle_message(message: types.Message):
         
         # Проверка на наличие HTML-кода
         if re.search(r'<[^>]+>', response):
+            logger.error(f"Получен HTML-код вместо текста: {response}")
             response = "Извините, произошла ошибка. Ответ содержит некорректные данные."
 
         # Разделение длинного сообщения на части
