@@ -4,25 +4,17 @@ import requests
 from aiogram import Bot, Dispatcher, types
 import g4f
 from aiogram.utils import executor
+import re
+import asyncio
 
-# Включите логирование
+# Настройка логирования
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Инициализация бота
 API_TOKEN = os.getenv('API_TOKEN')
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
-
-# Словарь для хранения истории разговоров
-conversation_history = {}
-
-# Функция для обрезки истории разговора
-def trim_history(history, max_length=4096):
-    current_length = sum(len(message["content"]) for message in history)
-    while history and current_length > max_length:
-        removed_message = history.pop(0)
-        current_length -= len(removed_message["content"])
-    return history
 
 async def get_gpt_response(query):
     try:
@@ -32,60 +24,32 @@ async def get_gpt_response(query):
         )
         return response
     except Exception as e:
-        logging.error(f"Ошибка при получении ответа от GPT: {e}")
-        return "Извините, произошла ошибка."
+        logger.error(f"Ошибка при получении ответа от GPT: {str(e)}")
+        return f"Произошла ошибка при обращении к GPT: {str(e)}"
 
-@dp.message_handler(commands=['clear'])
-async def process_clear_command(message: types.Message):
-    user_id = message.from_user.id
-    conversation_history[user_id] = []
-    await message.reply("История диалога очищена.")
-
-# Обработчик для каждого нового сообщения
-@dp.message_handler()
-async def send_welcome(message: types.Message):
-    user_id = message.from_user.id
-    user_input = message.text
-
-    if user_id not in conversation_history:
-        conversation_history[user_id] = []
-
-    # Добавляем сообщения от пользователя в историю
-    conversation_history[user_id].append({"role": "user", "content": user_input})
-    conversation_history[user_id] = trim_history(conversation_history[user_id])
-
-    chat_history = conversation_history[user_id]
-
-    try:
-        chat_gpt_response = await get_gpt_response(user_input)
-    except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 429:
-            logging.error(f"Превышен лимит запросов: {e}")
-            chat_gpt_response = "Извините, вы превысили лимит запросов. Попробуйте позже."
-        elif e.response.status_code == 525:
-            logging.error(f"Ошибка сервера: {e}")
-            chat_gpt_response = "Извините, произошла ошибка на сервере. Попробуйте позже."
-        else:
-            logging.error(f"HTTP ошибка: {e}")
-            chat_gpt_response = "Извините, произошла ошибка."
-    except Exception as e:
-        logging.error(f"Общая ошибка: {e}")
-        chat_gpt_response = "Извините, произошла ошибка."
-
-    # Проверка на пустое сообщение или HTML-код
-    if not chat_gpt_response.strip() or re.search(r'<[^>]+>', chat_gpt_response):
-        chat_gpt_response = "Извините, произошла ошибка. Ответ пустой или содержит некорректные данные."
-
-    # Добавляем сообщения от GPT-4 в историю
-    conversation_history[user_id].append({"role": "assistant", "content": chat_gpt_response})
-    conversation_history[user_id] = trim_history(conversation_history[user_id])
+@dp.message_handler(commands=['gpt'])
+async def handle_gpt_command(message: types.Message):
+    query = message.text.split(' ', 1)[1] if len(message.text.split(' ', 1)) > 1 else ''
     
-    logging.info(f"История диалога: {conversation_history}")
-    length = sum(len(message["content"]) for message in conversation_history[user_id])
-    logging.info(f"Длина истории: {length}")
-    await message.answer(chat_gpt_response)
+    if query:
+        logger.info(f"Получен запрос: {query}")
+        await message.answer("Обрабатываю ваш запрос...")
+        
+        response = await get_gpt_response(query)
+        
+        await message.reply(response)
+        logger.info("Ответ отправлен")
+    else:
+        await message.reply("Пожалуйста, введите запрос после команды /gpt")
+
+# Функция для запуска бота
+async def main():
+    try:
+        logger.info("Запуск бота...")
+        await dp.start_polling()
+    except Exception as e:
+        logger.error(f"Ошибка при работе бота: {str(e)}")
 
 # Запуск бота
 if __name__ == '__main__':
-    logging.info("Запуск бота...")
-    executor.start_polling(dp, skip_updates=True)
+    asyncio.run(main())
