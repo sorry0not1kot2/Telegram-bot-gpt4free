@@ -32,7 +32,7 @@ def trim_history(history, max_length=4096):
 async def get_gpt_response(chat_history):
     try:
         response = await g4f.ChatCompletion.create_async(
-            model="defolt",  # Используйте правильное имя модели
+            model="gpt-4",  # Используйте правильное имя модели
             messages=chat_history,
             provider=g4f.Provider.Liaobots  # Используйте указанного провайдера
         )
