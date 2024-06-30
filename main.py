@@ -30,13 +30,12 @@ def trim_history(history, max_length=4096):
 async def get_gpt_response(chat_history):
     try:
         response = await g4f.ChatCompletion.create_async(
-            model="gpt-4",  # Используйте правильное имя модели
+            model="gpt-3.5-turbo",  # Используйте правильное имя модели
             messages=chat_history,
             provider=g4f.Provider.Liaobots  # Используйте указанного провайдера
         )
-        response_text = response.choices[0].message.content or ""
-        logger.info(f"Ответ от GPT: {response_text}")
-        return response_text
+        logger.info(f"Ответ от GPT: {response}")
+        return response
     except Exception as e:
         logger.error(f"Ошибка при получении ответа от GPT: {str(e)}")
         return f"Произошла ошибка при обращении к GPT: {str(e)}"
@@ -67,7 +66,7 @@ async def handle_message(message: types.Message):
         # Проверка на наличие HTML-кода
         if re.search(r'<[^>]+>', response):
             logger.error(f"Получен HTML-код вместо текста: {response}")
-            response = "Извините, произошла ошибка. Ответ содержит некорректные данные."
+            response = "Извините, произошла ошибка. HTML-код вместо текста."
 
         # Разделение длинного сообщения на части
         messages = split_message(response)
