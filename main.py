@@ -27,9 +27,9 @@ async def get_gpt_response(query):
         logger.error(f"Ошибка при получении ответа от GPT: {str(e)}")
         return f"Произошла ошибка при обращении к GPT: {str(e)}"
 
-@dp.message_handler(commands=['gpt'])
-async def handle_gpt_command(message: types.Message):
-    query = message.text.split(' ', 1)[1] if len(message.text.split(' ', 1)) > 1 else ''
+@dp.message_handler()
+async def handle_message(message: types.Message):
+    query = message.text
     
     if query:
         logger.info(f"Получен запрос: {query}")
@@ -40,7 +40,7 @@ async def handle_gpt_command(message: types.Message):
         await message.reply(response)
         logger.info("Ответ отправлен")
     else:
-        await message.reply("Пожалуйста, введите запрос после команды /gpt")
+        await message.reply("Пожалуйста, введите сообщение.")
 
 # Функция для запуска бота
 async def main():
