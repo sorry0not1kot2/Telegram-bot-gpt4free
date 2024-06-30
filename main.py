@@ -27,6 +27,9 @@ async def get_gpt_response(query):
         logger.error(f"Ошибка при получении ответа от GPT: {str(e)}")
         return f"Произошла ошибка при обращении к GPT: {str(e)}"
 
+def split_message(message, max_length=4096):
+    return [message[i:i+max_length] for i in range(0, len(message), max_length)]
+
 @dp.message_handler()
 async def handle_message(message: types.Message):
     query = message.text
@@ -37,7 +40,11 @@ async def handle_message(message: types.Message):
         
         response = await get_gpt_response(query)
         
-        await message.reply(response)
+        # Разделение длинного сообщения на части
+        messages = split_message(response)
+        for msg in messages:
+            await message.reply(msg)
+        
         logger.info("Ответ отправлен")
     else:
         await message.reply("Пожалуйста, введите сообщение.")
