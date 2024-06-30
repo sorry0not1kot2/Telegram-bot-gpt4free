@@ -3,8 +3,6 @@ import os
 import requests
 from aiogram import Bot, Dispatcher, types
 import g4f
-from g4f.client import Client
-from g4f.Provider import You
 from aiogram.utils import executor
 import re
 import asyncio
@@ -17,9 +15,6 @@ logger = logging.getLogger(__name__)
 API_TOKEN = os.getenv('API_TOKEN')
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
-
-# Инициализация клиента GPT
-client = Client(provider=You)
 
 # Словарь для хранения истории разговоров
 conversation_history = {}
@@ -34,13 +29,14 @@ def trim_history(history, max_length=4096):
 
 async def get_gpt_response(chat_history):
     try:
-        chat_completion = client.chat.completions.create(
-            model="gpt-3.5-turbo",  # Используйте правильное имя модели
-            messages=chat_history
+        response = await g4f.ChatCompletion.create_async(
+            model=g4f.models.default,  # Используйте правильное имя модели
+            messages=chat_history,
+            provider=g4f.Provider.You  # Используйте указанного провайдера
         )
-        response = chat_completion.choices[0].message.content or ""
-        logger.info(f"Ответ от GPT-3.5-turbo: {response}")
-        return response
+        response_text = response.choices[0].message.content or ""
+        logger.info(f"Ответ от GPT: {response_text}")
+        return response_text
     except Exception as e:
         logger.error(f"Ошибка при получении ответа от GPT: {str(e)}")
         return f"Произошла ошибка при обращении к GPT: {str(e)}"
@@ -78,7 +74,7 @@ async def handle_message(message: types.Message):
         for msg in messages:
             await message.reply(msg)
         
-        # Добавляем сообщения от GPT-3.5-turbo в историю
+        # Добавляем сообщения от GPT в историю
         conversation_history[user_id].append({"role": "assistant", "content": response})
         conversation_history[user_id] = trim_history(conversation_history[user_id])
         
