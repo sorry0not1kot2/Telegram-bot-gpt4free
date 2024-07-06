@@ -41,5 +41,4 @@ jobs:
 
     - name: Set up environment variables
       env:
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        TOKEN_GPT_API_1: ${{ secrets.TOKEN_GPT_API_1 }}
+        TELEGRAM_BOT_TOKEN: ${ secrets.TELEGRAM_BOT_TOKEN }
