@@ -6,6 +6,7 @@ import g4f
 from aiogram.utils import executor
 import nest_asyncio
 
+
 nest_asyncio.apply()
 
 # Настройка логирования
