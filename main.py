@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 # Настройка бота
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+if not BOT_TOKEN:
+    raise ValueError("No BOT_TOKEN provided")
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher(bot)
 
