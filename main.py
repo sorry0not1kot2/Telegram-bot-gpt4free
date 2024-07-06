@@ -1,10 +1,10 @@
 # файл main.py :
 import asyncio
-import logging
 import os
+import logging
 from aiogram import Bot, Dispatcher, types
-import g4f
 from aiogram.utils import executor
+import g4f
 import nest_asyncio
 
 nest_asyncio.apply()
@@ -21,8 +21,8 @@ bot = Bot(BOT_TOKEN)
 dp = Dispatcher(bot)
 
 # Переменные для провайдера и модели
-PROVIDER = g4f.Provider.Bing
-MODEL = g4f.models.default
+PROVIDER = g4f.Provider.DeepAI  # Замените на нужный провайдер
+MODEL = g4f.models.gpt_4  # Или g4f.models.claude
 
 # Словарь для хранения истории разговоров
 conversation_history = {}
@@ -35,6 +35,10 @@ def trim_history(history, max_length=4096):
         current_length -= len(removed_message["content"])
     return history
 
+@dp.message_handler(commands=['start'])
+async def send_welcome(message: types.Message):
+    await message.reply("Привет! Я бот, использующий GPT-4. Отправьте мне сообщение, и я постараюсь ответить.")
+
 @dp.message_handler(commands=['clear'])
 async def process_clear_command(message: types.Message):
     user_id = message.from_user.id
@@ -43,7 +47,7 @@ async def process_clear_command(message: types.Message):
 
 # Обработчик для каждого нового сообщения
 @dp.message_handler()
-async def send_welcome(message: types.Message):
+async def handle_message(message: types.Message):
     user_id = message.from_user.id
     user_input = message.text
 
@@ -62,9 +66,6 @@ async def send_welcome(message: types.Message):
             provider=PROVIDER,
         )
         chat_gpt_response = response.choices[0].message.content 
-    except g4f.errors.ProviderNotWorkingError as e:
-        logger.error(f"Provider {PROVIDER.name} is not working: {e}")
-        chat_gpt_response = "Извините, провайдер временно недоступен. Попробуйте позже."
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         chat_gpt_response = "Извините, произошла ошибка."
@@ -78,3 +79,4 @@ async def send_welcome(message: types.Message):
 # Запуск бота
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
+
