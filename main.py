@@ -1,21 +1,20 @@
+import asyncio
 import logging
 import os
-import requests
 from aiogram import Bot, Dispatcher, types
 import g4f
 from aiogram.utils import executor
-import re
-import asyncio
-from aiogram.utils.markdown import html_decoration as hd
-from bs4 import BeautifulSoup
+import nest_asyncio
+
+nest_asyncio.apply()
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Инициализация бота
-API_TOKEN = os.getenv('API_TOKEN')
-bot = Bot(token=API_TOKEN)
+# Настройка бота
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+bot = Bot(BOT_TOKEN)
 dp = Dispatcher(bot)
 
 # Словарь для хранения истории разговоров
@@ -29,88 +28,46 @@ def trim_history(history, max_length=4096):
         current_length -= len(removed_message["content"])
     return history
 
-async def get_gpt_response(chat_history):
-    try:
-        response = await g4f.ChatCompletion.create_async(
-            model="gpt-4",  # Используйте правильное имя модели
-            messages=chat_history,
-            provider=g4f.Provider.Liaobots  # Используйте указанного провайдера
-        )
-        logger.info(f"Ответ от GPT: {response}")
-        return response
-    except Exception as e:
-        logger.error(f"Ошибка при получении ответа от GPT: {str(e)}")
-        return f"Произошла ошибка при обращении к GPT: {str(e)}"
 
-def split_message(message, max_length=4096):
-    return [message[i:i+max_length] for i in range(0, len(message), max_length)]
+@dp.message_handler(commands=['clear'])
+async def process_clear_command(message: types.Message):
+    user_id = message.from_user.id
+    conversation_history[user_id] = []
+    await message.reply("История диалога очищена.")
 
-def html_to_telegram_format(html_content):
-    soup = BeautifulSoup(html_content, 'html.parser')
-    telegram_text = ''
-    for element in soup.recursiveChildGenerator():
-        if element.name == 'b':
-            telegram_text += hd.bold(element.text)
-        elif element.name == 'i':
-            telegram_text += hd.italic(element.text)
-        elif element.name == 'u':
-            telegram_text += hd.underline(element.text)
-        elif element.name == 'a':
-            telegram_text += hd.link(element.text, element['href'])
-        elif element.name == 'code':
-            telegram_text += hd.code(element.text)
-        elif element.name == 'pre':
-            telegram_text += hd.pre(element.text)
-        elif element.name is None:
-            telegram_text += element
-    return telegram_text
-
+# Обработчик для каждого нового сообщения
 @dp.message_handler()
-async def handle_message(message: types.Message):
+async def send_welcome(message: types.Message):
     user_id = message.from_user.id
     user_input = message.text
 
     if user_id not in conversation_history:
         conversation_history[user_id] = []
 
-    # Добавляем сообщения от пользователя в историю
     conversation_history[user_id].append({"role": "user", "content": user_input})
     conversation_history[user_id] = trim_history(conversation_history[user_id])
 
     chat_history = conversation_history[user_id]
 
-    if user_input:
-        logger.info(f"Получен запрос: {user_input}")
-        await message.answer("Обрабатываю ваш запрос...")
-
-        response = await get_gpt_response(chat_history)
-
-        # Преобразование HTML в формат Telegram
-        if re.search(r'<[^>]+>', response):
-            logger.info("Преобразование HTML в формат Telegram")
-            response = html_to_telegram_format(response)
-
-        # Разделение длинных сообщений
-        messages = split_message(response)
-        for msg in messages:
-            await message.reply(msg)
-
-        # Добавляем сообщения от GPT в историю
-        conversation_history[user_id].append({"role": "assistant", "content": response})
-        conversation_history[user_id] = trim_history(conversation_history[user_id])
-
-        logger.info("Ответ отправлен")
-    else:
-        await message.reply("Пожалуйста, введите сообщение.")
-
-# Функция для запуска бота
-async def main():
     try:
-        logger.info("Запуск бота...")
-        await dp.start_polling()
+        response = await g4f.ChatCompletion.create_async(
+            model=g4f.models.default,
+            messages=chat_history,
+            provider=g4f.Provider.GeekGpt,
+        )
+        # Исправлено получение ответа
+        chat_gpt_response = response.choices[0].message.content 
     except Exception as e:
-        logger.error(f"Ошибка при работе бота: {str(e)}")
+        print(f"{g4f.Provider.GeekGpt.name}:", e)
+        chat_gpt_response = "Извините, произошла ошибка."
+
+    conversation_history[user_id].append({"role": "assistant", "content": chat_gpt_response})
+    print(conversation_history)
+    length = sum(len(message["content"]) for message in conversation_history[user_id])
+    print(length)
+    await message.answer(chat_gpt_response)
+
 
 # Запуск бота
 if __name__ == '__main__':
-    asyncio.run(main())
+    executor.start_polling(dp, skip_updates=True)
