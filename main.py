@@ -1,5 +1,4 @@
 # файл main.py :
-import asyncio
 import os
 import logging
 from aiogram import Bot, Dispatcher, types
@@ -21,7 +20,7 @@ bot = Bot(BOT_TOKEN)
 dp = Dispatcher(bot)
 
 # Переменные для провайдера и модели
-PROVIDER = g4f.Provider.DeepAI  # Замените на нужный провайдер
+PROVIDER = g4f.Provider.YouChat  # Замените на нужный провайдер
 MODEL = g4f.models.gpt_4  # Или g4f.models.claude
 
 # Словарь для хранения истории разговоров
@@ -79,4 +78,3 @@ async def handle_message(message: types.Message):
 # Запуск бота
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
-
