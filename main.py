@@ -1,3 +1,4 @@
+# файл main.py :
 import asyncio
 import logging
 import os
@@ -5,7 +6,6 @@ from aiogram import Bot, Dispatcher, types
 import g4f
 from aiogram.utils import executor
 import nest_asyncio
-
 
 nest_asyncio.apply()
 
@@ -20,6 +20,10 @@ if not BOT_TOKEN:
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher(bot)
 
+# Переменные для провайдера и модели
+PROVIDER = g4f.Provider.Bing
+MODEL = g4f.models.default
+
 # Словарь для хранения истории разговоров
 conversation_history = {}
 
@@ -30,7 +34,6 @@ def trim_history(history, max_length=4096):
         removed_message = history.pop(0)
         current_length -= len(removed_message["content"])
     return history
-
 
 @dp.message_handler(commands=['clear'])
 async def process_clear_command(message: types.Message):
@@ -54,22 +57,23 @@ async def send_welcome(message: types.Message):
 
     try:
         response = await g4f.ChatCompletion.create_async(
-            model=g4f.models.default,
+            model=MODEL,
             messages=chat_history,
-            provider=g4f.Provider.GeekGpt,
+            provider=PROVIDER,
         )
-        # Исправлено получение ответа
         chat_gpt_response = response.choices[0].message.content 
+    except g4f.errors.ProviderNotWorkingError as e:
+        logger.error(f"Provider {PROVIDER.name} is not working: {e}")
+        chat_gpt_response = "Извините, провайдер временно недоступен. Попробуйте позже."
     except Exception as e:
-        print(f"{g4f.Provider.GeekGpt.name}:", e)
+        logger.error(f"Unexpected error: {e}")
         chat_gpt_response = "Извините, произошла ошибка."
 
     conversation_history[user_id].append({"role": "assistant", "content": chat_gpt_response})
-    print(conversation_history)
+    logger.info(f"Conversation history: {conversation_history}")
     length = sum(len(message["content"]) for message in conversation_history[user_id])
-    print(length)
+    logger.info(f"Conversation length: {length}")
     await message.answer(chat_gpt_response)
-
 
 # Запуск бота
 if __name__ == '__main__':
