@@ -35,6 +35,11 @@ jobs:
       run: |
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --
-    
+
     - name: Run main.py
       run: python main.py 
+
+    - name: Set up environment variables
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TOKEN_GPT_API_1: ${{ secrets.TOKEN_GPT_API_1 }}
