@@ -2,4 +2,4 @@ aiogram==2.25.2
 g4f==0.3.2.1
 telebot==0.0.5 
 curl_cffi==0.7.0
-curl_cffi==0.7.0 
+nest_asyncio 
